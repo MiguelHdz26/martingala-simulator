@@ -163,19 +163,33 @@ if submitted:
     else:
         st.warning("Terminaste con el capital intacto (o con pérdidas leves).")
 
-    # --- GRÁFICA ---
+    # --- GRÁFICA OPTIMIZADA PARA MÓVIL ---
     st.subheader("Evolución del Dinero")
-    fig, ax = plt.subplots(figsize=(6, 4)) # Tamaño más pequeño para celular
     
-    ax.plot(historia, color=color, linewidth=2)
-    ax.axhline(y=cap_inicial, color='green', linestyle='--', alpha=0.5, label='Inicio')
-    ax.axhline(y=0, color='red', linestyle='-', label='Quiebra')
+    # Ajustamos figsize para que sea más ancha y legible en móvil
+    # dpi=100 mejora la nitidez en pantallas de celular
+    fig, ax = plt.subplots(figsize=(8, 5), dpi=100) 
     
-    ax.set_ylabel("Saldo ($)")
-    ax.set_xlabel("Rondas")
+    # Graficamos
+    ax.plot(historia, color=color, linewidth=2, label='Tu Saldo')
+    
+    # Líneas de referencia más visibles
+    ax.axhline(y=cap_inicial, color='green', linestyle='--', alpha=0.6, label='Capital Inicial')
+    ax.axhline(y=0, color='red', linestyle='-', linewidth=1.5, label='Bancarrota')
+    
+    # Estilizado para móvil (letras un poco más grandes)
+    ax.set_ylabel("Saldo ($)", fontsize=10)
+    ax.set_xlabel("Rondas", fontsize=10)
     ax.grid(True, alpha=0.3)
-    ax.legend(loc='upper left', fontsize='small')
+    ax.legend(loc='upper left', fontsize='small', frameon=True, facecolor='white', framealpha=0.8)
     
-    # Fondo transparente para que se vea mejor en streamlit
+    # Eliminar bordes blancos extra
+    plt.tight_layout()
+    
+    # Truco visual: Fondo transparente para integrarse con modo oscuro/claro de Streamlit
     fig.patch.set_alpha(0) 
-    st.pyplot(fig)
+    ax.patch.set_alpha(0)
+
+    # --- AQUÍ ESTÁ LA SOLUCIÓN DEL TAMAÑO Y CENTRADO ---
+    st.pyplot(fig, use_container_width=True)
+    
