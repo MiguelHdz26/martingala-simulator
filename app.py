@@ -1,13 +1,11 @@
 import streamlit as st
 import random
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
-# --- CONFIGURACIÓN DE PÁGINA (MOBILE FRIENDLY) ---
-# Usamos layout="centered" porque se ve mejor en pantallas verticales de celular
 st.set_page_config(page_title="Simulador Martingala", layout="centered")
 
 st.title("🎲 Simulador Martingala")
-st.markdown("Compara la **Teoría** vs. **Realidad** en tu celular.")
+st.markdown("Compara la **Teoría** vs. **Realidad**")
 
 # --- FUNCIONES DE SIMULACIÓN (ACTUALIZADAS) ---
 
@@ -54,7 +52,7 @@ def simular_ruleta(capital_inicial, apuesta_base, max_giros, limite_mesa):
     apuesta_actual = apuesta_base
     historial_saldo = [saldo]
     veces_cero = 0
-    veces_limite = 0 # NUEVO CONTADOR
+    veces_limite = 0
     msg_estado = ""
 
     for i in range(max_giros):
@@ -67,7 +65,7 @@ def simular_ruleta(capital_inicial, apuesta_base, max_giros, limite_mesa):
         # 2. Aplicar límite de mesa
         if apuesta_actual > limite_mesa:
             apuesta_actual = limite_mesa
-            veces_limite += 1 # CONTAMOS QUE TOCÓ EL TECHO
+            veces_limite += 1
 
         # 3. Simulación Ruleta
         casilla = random.randint(1, 38)
@@ -89,12 +87,10 @@ def simular_ruleta(capital_inicial, apuesta_base, max_giros, limite_mesa):
             
     return historial_saldo, msg_estado, veces_cero, veces_limite
 
-# --- INTERFAZ DE USUARIO (UX MÓVIL) ---
+# --- INTERFAZ DE USUARIO ---
 
-# Usamos un expander para que los controles no ocupen toda la pantalla del celular
 with st.expander("⚙️ CONFIGURACIÓN DEL JUEGO (Toca para abrir)", expanded=True):
     
-    # Usamos st.form para evitar recargas constantes en el celular
     with st.form("config_form"):
         tipo_juego = st.selectbox("Elegir Juego", ["Dados Justos (50%)", "Ruleta Americana (47.3%)"])
         
@@ -107,10 +103,10 @@ with st.expander("⚙️ CONFIGURACIÓN DEL JUEGO (Toca para abrir)", expanded=T
             # Checkbox para activar límite
             usa_limite = st.checkbox("Activar Límite de Mesa", value=True)
             
-        # Logica visual del limite (si no se usa, es infinito)
+        # Logica visual del limite
         limite_mesa_input = st.number_input("Tope de Apuesta ($)", value=2000, step=100)
         
-        # Botón grande para ejecutar
+        # Botón para ejecutar
         submitted = st.form_submit_button("🚀 SIMULAR RESULTADO", use_container_width=True)
 
 # Lógica del límite real
@@ -134,7 +130,7 @@ if submitted:
     saldo_final = historia[-1]
     ganancia = saldo_final - cap_inicial
 
-    # --- RESULTADOS (Diseño limpio) ---
+    # --- RESULTADOS---
     st.divider()
     
     # Métricas principales
@@ -163,33 +159,31 @@ if submitted:
     else:
         st.warning("Terminaste con el capital intacto (o con pérdidas leves).")
 
-    # --- GRÁFICA OPTIMIZADA PARA MÓVIL ---
+    # --- GRÁFICA INTERACTIVA (NATIVA) ---
     st.subheader("Evolución del Dinero")
     
-    # Ajustamos figsize para que sea más ancha y legible en móvil
-    # dpi=100 mejora la nitidez en pantallas de celular
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=100) 
-    
-    # Graficamos
-    ax.plot(historia, color=color, linewidth=2, label='Tu Saldo')
-    
-    # Líneas de referencia más visibles
-    ax.axhline(y=cap_inicial, color='green', linestyle='--', alpha=0.6, label='Capital Inicial')
-    ax.axhline(y=0, color='red', linestyle='-', linewidth=1.5, label='Bancarrota')
-    
-    # Estilizado para móvil (letras un poco más grandes)
-    ax.set_ylabel("Saldo ($)", fontsize=10)
-    ax.set_xlabel("Rondas", fontsize=10)
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc='upper left', fontsize='small', frameon=True, facecolor='white', framealpha=0.8)
-    
-    # Eliminar bordes blancos extra
-    plt.tight_layout()
-    
-    # Truco visual: Fondo transparente para integrarse con modo oscuro/claro de Streamlit
-    fig.patch.set_alpha(0) 
-    ax.patch.set_alpha(0)
+    # Creamos la figura interactiva
+    fig = go.Figure()
 
-    # --- AQUÍ ESTÁ LA SOLUCIÓN DEL TAMAÑO Y CENTRADO ---
-    st.pyplot(fig, use_container_width=True)
+    # Línea del saldo
+    fig.add_trace(go.Scatter(
+        y=historia, 
+        mode='lines', 
+        name='Saldo',
+        line=dict(color=color, width=3)
+    ))
+
+    # Línea de Capital Inicial
+    fig.add_hline(y=cap_inicial, line_dash="dash", line_color="green", annotation_text="Inicial")
     
+    # Línea de Bancarrota
+    fig.add_hline(y=0, line_color="red", line_width=2, annotation_text="Quiebra")
+
+    fig.update_layout(
+        xaxis_title="Rondas",
+        yaxis_title="Saldo ($)",
+        margin=dict(l=20, r=20, t=30, b=20),
+        hovermode="x unified"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
